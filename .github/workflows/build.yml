@@ -1,0 +1,41 @@
+name: build
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'microsoft'
+
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '9.7.1'
+
+      - name: build
+        run: |
+          FILE=$(find . -name settings.gradle | head -n 1)
+          if [ -z "$FILE" ]; then
+            echo "Could not find settings.gradle anywhere. Files in the repo:"
+            find . -not -path './.git/*' | head -n 80
+            exit 1
+          fi
+          DIR=$(dirname "$FILE")
+          echo "Building in $DIR"
+          cd "$DIR"
+          gradle build --no-daemon
+
+      - name: upload the mod jar
+        uses: actions/upload-artifact@v7
+        with:
+          name: TPs-Anchor-Optimiser
+          path: |
+            **/build/libs/*.jar
+            !**/build/libs/*-sources.jar
